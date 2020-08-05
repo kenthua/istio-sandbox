@@ -113,7 +113,7 @@ done
 ```
 
 ## Replicated Control Plane & Failover
-* Apply destination rule for failover -- REPLICATED_CONTROL_PLANE
+* Apply destination rule for failover
 ```
 for i in ${CLUSTER_1} ${CLUSTER_2}
 do
@@ -121,7 +121,7 @@ do
 done
 ```
 
-* Service entry for both services -- REPLICATED_CONTROL_PLANE
+* Service entry for both services
 ```
 kubectl  apply -n sample --context ${CLUSTER_1} -f - << EOF
 apiVersion: networking.istio.io/v1alpha3
@@ -154,7 +154,7 @@ spec:
 EOF
 ```
 
-* Test failover from CLUSTER_1 to CLUSTER_2 -- REPLICATED_CONTROL_PLANE
+* Test failover from CLUSTER_1 to CLUSTER_2
 ```
 export SLEEP1=$(kubectl get pod -n sample -l app=sleep --context=${CLUSTER_1} -o jsonpath='{.items[0].metadata.name}')
 
@@ -163,7 +163,7 @@ for i in {1..15}
 done
 ```
 
-* Scale down and up to see behavior -- REPLICATED_CONTROL_PLANE
+* Scale down and up to see behavior
 ```
 kubectl scale deploy helloworld-v1  -n sample --context ${CLUSTER_1} --replicas=0
 #wait
