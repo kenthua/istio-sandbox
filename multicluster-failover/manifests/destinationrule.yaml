@@ -1,0 +1,31 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: helloworld-outlier-detection
+spec:
+  host: helloworld.sample.global
+  trafficPolicy:
+    loadBalancer:
+      localityLbSetting:
+        failover:
+        - from: us-west1
+          to: asia-southeast1
+        - from: asia-southeast1
+          to: us-west1
+#        distribute:
+#        - from: "us-west1/*"
+#          to:
+#            "us-west1/*": 80
+#            "asia-southeast1/*": 20
+    connectionPool:
+      tcp:
+        maxConnections: 1000
+      http:
+        http2MaxRequests: 1000
+        maxRequestsPerConnection: 10
+    outlierDetection:
+      consecutiveErrors: 7
+      interval: 30s
+      baseEjectionTime: 30s
+    tls: 
+      mode: "ISTIO_MUTUAL" # this is needed otherwise we get -- upstream connect error or disconnect/reset before headers. reset reason: connection failure
