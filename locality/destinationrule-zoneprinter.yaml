@@ -1,0 +1,14 @@
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: zoneprinter-outlier-detection
+spec:
+  host: zoneprinter
+  trafficPolicy:
+    loadBalancer:
+      localityLbSetting:
+        enabled: true
+    outlierDetection:
+      consecutiveErrors: 7
+      interval: 30s
+      baseEjectionTime: 30s

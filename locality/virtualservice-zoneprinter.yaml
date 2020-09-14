@@ -1,0 +1,12 @@
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: zoneprinter-route
+spec:
+  hosts:
+  - zoneprinter.default.svc.cluster.local
+  http:
+  - name: "zoneprinter"
+    route:
+    - destination:
+        host: zoneprinter.default.svc.cluster.local
