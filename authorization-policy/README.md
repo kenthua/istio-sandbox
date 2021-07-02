@@ -2,11 +2,16 @@
 
 - Setup the environment
     ```
-    ISTIO_HOME=${HOME}/work/istio-1.9.5-asm.2
-    k apply -f ${ISTIO_HOME}/samples/httpbin/httpbin.yaml
+    export PROJECT_ID=your_project_id
+    export ASM_REV=asm-1102-2
+    ISTIO_HOME=${HOME}/work/istio-1.10.2-asm.2
+    envsubst <namespace-foo.yaml_tmpl > namespace-foo.yaml
+    alias k=kubectl
     k apply -f namespace-foo.yaml
-    k apply -f gateway.yaml
-    k apply -f virtualservice.yaml
+    k apply -n foo -f${ISTIO_HOME}/samples/httpbin/httpbin.yaml
+    k apply -n foo -f gateway.yaml
+    k apply -n foo -f virtualservice.yaml
+    k apply -f requestauthentication.yaml
     k apply -f ap-require-valid-token.yaml
     ```
 
@@ -15,19 +20,19 @@
     export INGRESS_PORT=$(kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.spec.ports[?(@.name=="http2")].port}')
     ```
 
-- Set debug so we can observe the rbac behavior (new window)
+- Enable rbac debug so we can observe the behavior of the ingress gateway (new window)
     ```
     istioctl pc log deploy/istio-ingressgateway -n istio-system --level rbac:debug
     k logs -f -l istio=ingressgateway -n istio-system
     ```
 
-- When it all works
+- When it all works (HTTP 200)
     ```
     TOKEN=$(curl https://raw.githubusercontent.com/istio/istio/release-1.10/security/tools/jwt/samples/demo.jwt -s)
     curl --header "Authorization: Bearer $TOKEN" "$INGRESS_HOST:$INGRESS_PORT/headers" -s -o /dev/null -w "%{http_code}\n"
     ```
 
-- When it doesn't work
+- When it doesn't work, because we require a valid principal and jwt token (HTTP 401)
     ```
     curl --header "Authorization: Bearer Blah" "$INGRESS_HOST:$INGRESS_PORT/headers" -s -o /dev/null -w "%{http_code}\n"
     ```
@@ -38,9 +43,12 @@
     k logs -f -l app=httpbin -n foo -c istio-proxy
     ```
 
-- Notice when applying at the application it denies because the jwt is not propagated and identity is now different
+- Apply a rule to require a JWT requestPrincipal.  (HTTP 403) Check the httpbin istio proxy logs.  
+    - Ingress gateway allows the call because a valid JWT with requestPrincipal are provided
+    - Application/service (httpbin) denies because the JWT is not propagated, instead we get the istio source principal (service account)
     ```
     k apply -f ap-require-valid-token-app-jwt-fail.yaml
+
     curl --header "Authorization: Bearer $TOKEN" "$INGRESS_HOST:$INGRESS_PORT/headers" -s -o /dev/null -w "%{http_code}\n"
     ```
 
@@ -72,28 +80,38 @@
     # }
     ```
 
-- Let's use istio auth
+- Apply the rule to allow allow all principals (i.e. istio source principal) (HTTP 200)
     ```
     k apply -f ap-require-valid-token-app-istioauth-all-allow.yaml
 
     curl --header "Authorization: Bearer $TOKEN" "$INGRESS_HOST:$INGRESS_PORT/headers" -s -o /dev/null -w "%{http_code}\n"
     ```
 
-- Let's allow only from ingressgateway - see the match
+- Apply the rule to allow only the istio source principal (service account) of the istio ingressgateway, see the rule match (give it some time to replicate) (HTTP 200)
     ```
+    envsubst <ap-require-valid-token-app-istioauth-all-allow-ingress.yaml_tmpl > ap-require-valid-token-app-istioauth-all-allow-ingress.yaml
     k apply -f ap-require-valid-token-app-istioauth-all-allow-ingress.yaml
 
     curl --header "Authorization: Bearer $TOKEN" "$INGRESS_HOST:$INGRESS_PORT/headers" -s -o /dev/null -w "%{http_code}\n"
     ```
 
-- Deploy sleep
+- Deploy sleep pod to invoke a call to httpbin
     ```
     k apply -f ${ISTIO_HOME}/samples/sleep/sleep.yaml -n foo
     ```
 
-- See how sleep is denied
+- The sleep pod is denied, the rule we previously applied allowed only the istio source principal from the ingress gateway (HTTP 403)
     ```
     k exec "$(k get pod -l app=sleep -n foo -o jsonpath={.items..metadata.name})" -c sleep -n foo -- curl -H "Authorization: Bearer ${TOKEN}" "http://httpbin.foo:8000/headers" -sS -o /dev/null -w "%{http_code}\n"
+    ```
 
-    k delete -f ${ISTIO_HOME}/samples/sleep/sleep.yaml -n foo
+- Cleanup
+    ```
+    k delete -n foo -f ${ISTIO_HOME}/samples/sleep/sleep.yaml
+    k delete -n foo -f ${ISTIO_HOME}/samples/httpbin/httpbin.yaml
+    k delete -n foo -f gateway.yaml
+    k delete -n foo -f virtualservice.yaml
+    k delete -f namespace-foo.yaml
+    k delete -f requestauthentication.yaml
+    k delete -f ap-require-valid-token.yaml
     ```

@@ -3,4 +3,4 @@ kind: Namespace
 metadata:
   name: foo
   labels:
-    istio.io/rev: asm-195-2
+    istio.io/rev: ${ASM_REV}
