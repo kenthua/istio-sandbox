@@ -106,6 +106,8 @@
     k exec "$(k get pod -l app=sleep -n foo -o jsonpath={.items..metadata.name})" -c sleep -n foo -- curl -H "Authorization: Bearer ${TOKEN}" "http://httpbin.foo:8000/headers" -sS -o /dev/null -w "%{http_code}\n"
     ```
 
+> NOTE: By default the jwt token is not forwarded, however the `RequestAuthentication` `jwtRules.forwardOriginalToken` can be set to `true` which would forward the jwt token to the workload.  As a result you can authz with jwt rather than the k8s service account.
+
 - Cleanup
     ```
     k delete -n foo -f ${ISTIO_HOME}/samples/sleep/sleep.yaml
