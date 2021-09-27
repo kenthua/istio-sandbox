@@ -3,8 +3,9 @@
 - Setup the environment
     ```
     export PROJECT_ID=your_project_id
-    export ASM_REV=asm-1102-2
-    ISTIO_HOME=${HOME}/work/istio-1.10.2-asm.2
+    export ASM_REV=asm-1104-14
+    export GATEWAY_NAMESPACE=istio-ingress
+    ISTIO_HOME=${HOME}/work/istio-${ASM_REV}
     envsubst <namespace-foo.yaml_tmpl > namespace-foo.yaml
     alias k=kubectl
     k apply -f namespace-foo.yaml
@@ -16,14 +17,14 @@
     ```
 
     ```
-    export INGRESS_HOST=$(kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-    export INGRESS_PORT=$(kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.spec.ports[?(@.name=="http2")].port}')
+    export INGRESS_HOST=$(kubectl -n ${GATEWAY_NAMESPACE} get service istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+    export INGRESS_PORT=$(kubectl -n ${GATEWAY_NAMESPACE} get service istio-ingressgateway -o jsonpath='{.spec.ports[?(@.name=="http2")].port}')
     ```
 
 - Enable rbac debug so we can observe the behavior of the ingress gateway (new window)
     ```
-    istioctl pc log deploy/istio-ingressgateway -n istio-system --level rbac:debug
-    k logs -f -l istio=ingressgateway -n istio-system
+    istioctl pc log deploy/istio-ingressgateway -n ${GATEWAY_NAMESPACE} --level rbac:debug
+    k logs -f -l istio=ingressgateway -n ${GATEWAY_NAMESPACE}
     ```
 
 - When it all works (HTTP 200)
@@ -54,26 +55,26 @@
 
     ```
     ...output...
-    # C=US";URI=spiffe://kenthua-test-standalone.svc.id.goog/ns/istio-system/sa/istio-ingressgateway-service-account'
+    # C=US";URI=spiffe://kenthua-test-standalone.svc.id.goog/ns/istio-ingress/sa/istio-ingressgateway'
     # , dynamicMetadata: filter_metadata {
     #   key: "istio_authn"
     #   value {
     #     fields {
     #       key: "source.namespace"
     #       value {
-    #         string_value: "istio-system"
+    #         string_value: "istio-ingress"
     #       }
     #     }
     #     fields {
     #       key: "source.principal"
     #       value {
-    #         string_value: "kenthua-test-standalone.svc.id.goog/ns/istio-system/sa/istio-ingressgateway-service-account"
+    #         string_value: "kenthua-test-standalone.svc.id.goog/ns/istio-ingress/sa/istio-ingressgateway"
     #       }
     #     }
     #     fields {
     #       key: "source.user"
     #       value {
-    #         string_value: "kenthua-test-standalone.svc.id.goog/ns/istio-system/sa/istio-ingressgateway-service-account"
+    #         string_value: "kenthua-test-standalone.svc.id.goog/ns/istio-ingress/sa/istio-ingressgateway"
     #       }
     #     }
     #   }
