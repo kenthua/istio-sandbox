@@ -1,4 +1,5 @@
 # Istio authz Policy JWT North/South, Istio Authn/Authz East/West
+## Note the [dry-run](https://cloud.google.com/service-mesh/docs/security/authorization-advanced-features) option for testing
 
 - Setup the environment
     ```
