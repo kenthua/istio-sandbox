@@ -3,6 +3,8 @@ kind: AuthorizationPolicy
 metadata:
   name: "httpbin"
   namespace: foo
+  annotations:
+    "istio.io/dry-run": "true"
 spec:
   selector:
     matchLabels:
